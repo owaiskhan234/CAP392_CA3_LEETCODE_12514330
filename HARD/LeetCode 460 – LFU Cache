@@ -1,0 +1,114 @@
+
+import java.util.*;
+
+class LFUCache {
+
+    static class Node {
+
+        final int key;
+        int value;
+        int freq;
+
+        Node(int key, int value) {
+            this.key = key;
+            this.value = value;
+            this.freq = 1;
+        }
+    }
+
+    private int capacity;
+    private int minFreq;
+
+    private HashMap<Integer, Node> map;
+
+    private HashMap<Integer, LinkedHashSet<Integer>> freqMap;
+
+    public LFUCache(int capacity) {
+
+        this.capacity = capacity;
+        this.minFreq = 0;
+
+        map = new HashMap<>();
+        freqMap = new HashMap<>();
+    }
+
+    public int get(int key) {
+
+        if (!map.containsKey(key)) {
+            return -1;
+        }
+
+        Node node = map.get(key);
+
+        updateFreq(node);
+
+        return node.value;
+    }
+
+    public void put(int key, int value) {
+
+        if (capacity == 0) {
+            return;
+        }
+
+        if (map.containsKey(key)) {
+
+            Node node = map.get(key);
+
+            node.value = value;
+
+            updateFreq(node);
+
+            return;
+        }
+
+        if (map.size() == capacity) {
+
+            LinkedHashSet<Integer> set =
+                freqMap.get(minFreq);
+
+            int removeKey = set.iterator().next();
+
+            set.remove(removeKey);
+
+            map.remove(removeKey);
+        }
+
+        Node node = new Node(key, value);
+
+        map.put(key, node);
+
+        freqMap.putIfAbsent(1, new LinkedHashSet<>());
+
+        freqMap.get(1).add(key);
+
+        minFreq = 1;
+    }
+
+    private void updateFreq(Node node) {
+
+        int oldFreq = node.freq;
+
+        LinkedHashSet<Integer> oldSet =
+            freqMap.get(oldFreq);
+
+        oldSet.remove(node.key);
+
+        if (oldSet.isEmpty()) {
+
+            freqMap.remove(oldFreq);
+
+            if (minFreq == oldFreq) {
+                minFreq++;
+            }
+        }
+
+        node.freq++;
+
+        freqMap.putIfAbsent(
+            node.freq, new LinkedHashSet<>()
+        );
+
+        freqMap.get(node.freq).add(node.key);
+    }
+}
